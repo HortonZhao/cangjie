@@ -23,6 +23,8 @@ import serialization.serialization.*
 class SettlementPage {
     @State var transfers: ArrayList<Transfer> = ArrayList()
     @State var balances: HashMap<String, Float64> = HashMap()
+    @State var paidTotals: HashMap<String, Float64> = HashMap()
+    @State var consumedTotals: HashMap<String, Float64> = HashMap()
 
     // 接收路由传递的参数
     public func aboutToAppear() {
@@ -32,6 +34,8 @@ class SettlementPage {
         let result = SettlementResult.deserialize(dm)
         this.transfers = result.transfers
         this.balances = result.balances
+        this.paidTotals = result.paidTotals
+        this.consumedTotals = result.consumedTotals
     }
 
     func build() {
@@ -59,6 +63,48 @@ class SettlementPage {
 //                    for ((name, balance) in this.balances) {
 //                        buildBalanceRow(name, balance)
 //                    }
+                }
+                .width(100.percent)
+            }
+            .padding(10)
+            .backgroundColor(Color.WHITE)
+            .borderRadius(8)
+            .margin(left: 15, right: 15)
+
+            // 支付统计
+            Text("支付统计")
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .margin(left: 15, top: 20, bottom: 10)
+
+            Row {
+                Column {
+                    buildAmountRow("Alice", paidTotals.get("Alice").getOrThrow())
+                    buildAmountRow("Bob", paidTotals.get("Bob").getOrThrow())
+                    buildAmountRow("Charlie", paidTotals.get("Charlie").getOrThrow())
+                    buildAmountRow("David", paidTotals.get("David").getOrThrow())
+                    buildAmountRow("Eve", paidTotals.get("Eve").getOrThrow())
+                }
+                .width(100.percent)
+            }
+            .padding(10)
+            .backgroundColor(Color.WHITE)
+            .borderRadius(8)
+            .margin(left: 15, right: 15)
+
+            // 消费统计
+            Text("消费统计")
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .margin(left: 15, top: 20, bottom: 10)
+
+            Row {
+                Column {
+                    buildAmountRow("Alice", consumedTotals.get("Alice").getOrThrow())
+                    buildAmountRow("Bob", consumedTotals.get("Bob").getOrThrow())
+                    buildAmountRow("Charlie", consumedTotals.get("Charlie").getOrThrow())
+                    buildAmountRow("David", consumedTotals.get("David").getOrThrow())
+                    buildAmountRow("Eve", consumedTotals.get("Eve").getOrThrow())
                 }
                 .width(100.percent)
             }
@@ -112,6 +158,21 @@ class SettlementPage {
         .width(100.percent)
         .height(100.percent)
         .backgroundColor(Color(0xFFF5F5F5))
+    }
+
+    @Builder
+    func buildAmountRow(name: String, amount: Float64) {
+        Row {
+            Text(name)
+                .fontSize(16)
+                .width(100)
+            Text("¥${this.formatAmount(amount)}")
+                .fontSize(16)
+                .fontColor(Color(0xFF333333))
+        }
+        .width(100.percent)
+        .height(40)
+        .padding(left: 20)
     }
 
     @Builder

@@ -11,6 +11,67 @@ import std.math.min
 
 public class SettlementSolver {
 
+    func ensureParticipant(balances: HashMap<Person, Float64>, person: Person) {
+        match (balances.get(person)) {
+            case Some(_) => {}
+            case None => balances.put(person, 0.0)
+        }
+    }
+
+    func ensureName(totals: HashMap<String, Float64>, name: String) {
+        match (totals.get(name)) {
+            case Some(_) => {}
+            case None => totals.put(name, 0.0)
+        }
+    }
+
+    func computeBillShares(bill: Bill): ArrayList<(Person, Float64)> {
+        var shares = ArrayList<(Person, Float64)>()
+        let consumers = bill.consumers
+        if (consumers.size == 0) {
+            return shares
+        }
+
+        let weights = bill.weights
+        var useWeights = false
+        var totalWeight = 0.0
+        if (weights.size == consumers.size) {
+            var idx = 0
+            while (idx < weights.size) {
+                let rawWeight = weights.get(idx).getOrThrow()
+                if (rawWeight > 0.0) {
+                    totalWeight = totalWeight + rawWeight
+                }
+                idx++
+            }
+            if (totalWeight > 0.0) {
+                useWeights = true
+            }
+        }
+
+        if (useWeights) {
+            var idx = 0
+            while (idx < consumers.size) {
+                let consumer = consumers.get(idx).getOrThrow()
+                let rawWeight = weights.get(idx).getOrThrow()
+                var weight = rawWeight
+                if (weight < 0.0) {
+                    weight = 0.0
+                }
+                let share = bill.amount * weight / totalWeight
+                shares.append((consumer, share))
+                idx++
+            }
+        } else {
+            let shareAmount = bill.amount / Float64(consumers.size)
+            for (consumer in consumers) {
+                shares.append((consumer, shareAmount))
+            }
+        }
+
+        return shares
+    }
+
     // ==================== 第一步：计算净余额 ====================
     // 输入：完整的账单输入
     // 输出：每个人的净余额（正数表示应收，负数表示应付）
@@ -28,19 +89,23 @@ public class SettlementSolver {
             let amount = bill.amount
             let consumers = bill.consumers
 
+            this.ensureParticipant(balances, payer)
+            for (consumer in consumers) {
+                this.ensureParticipant(balances, consumer)
+            }
+
             // 付款人先支出全部金额（减少余额）
             // 注意：付款人也是消费者之一，会通过平摊加回来
             balances[payer] = balances[payer] + amount
 
-            // 计算每人应付金额
-            let shareCount = consumers.size
-            if (shareCount == 0) {
+            // 计算每人应付金额（支持按权重分摊）
+            let shares = this.computeBillShares(bill)
+            if (shares.size == 0) {
                 continue  // 没有消费者，跳过
             }
-            let shareAmount = amount / Float64(shareCount)
-
-            // 每个消费者平摊
-            for (consumer in consumers) {
+            for (share in shares) {
+                let consumer = share[0]
+                let shareAmount = share[1]
                 balances[consumer] = balances[consumer] - shareAmount
             }
         }
@@ -129,6 +194,30 @@ public class SettlementSolver {
         // 计算最小转账
         let transfers = this.minimizeTransfers(balances)
 
-        return SettlementResult(transfers, balanceDisplay)
+        // 计算支付/消费统计
+        let paidTotals = HashMap<String, Float64>()
+        let consumedTotals = HashMap<String, Float64>()
+
+        for (person in input.participants) {
+            this.ensureName(paidTotals, person.name)
+            this.ensureName(consumedTotals, person.name)
+        }
+
+        for (bill in input.bills) {
+            let payerName = bill.payer.name
+            this.ensureName(paidTotals, payerName)
+            paidTotals[payerName] = paidTotals[payerName] + bill.amount
+
+            let shares = this.computeBillShares(bill)
+            for (share in shares) {
+                let consumer = share[0]
+                let shareAmount = share[1]
+                let consumerName = consumer.name
+                this.ensureName(consumedTotals, consumerName)
+                consumedTotals[consumerName] = consumedTotals[consumerName] + shareAmount
+            }
+        }
+
+        return SettlementResult(transfers, balanceDisplay, paidTotals, consumedTotals)
     }
 }

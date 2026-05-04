@@ -35,7 +35,8 @@ class BillEntryPage {
         {"name": "Alice"},
         {"name": "Bob"},
         {"name": "Charlie"}
-      ]
+      ],
+      "weights": [1, 1, 2]
     },
     {
       "payer": {"name": "Bob"},
@@ -44,7 +45,8 @@ class BillEntryPage {
         {"name": "Bob"},
         {"name": "David"},
         {"name": "Eve"}
-      ]
+      ],
+      "weights": [1, 1, 1]
     },
     {
       "payer": {"name": "Charlie"},
@@ -53,7 +55,8 @@ class BillEntryPage {
         {"name": "Alice"},
         {"name": "Charlie"},
         {"name": "Eve"}
-      ]
+      ],
+      "weights": [2, 1, 1]
     }
   ]
 }
