@@ -31,6 +31,7 @@ class BillEntryPage {
     {
       "payer": {"name": "Alice"},
       "amount": 120.5,
+      "note": "晚餐聚餐",
       "consumers": [
         {"name": "Alice"},
         {"name": "Bob"},
@@ -41,6 +42,7 @@ class BillEntryPage {
     {
       "payer": {"name": "Bob"},
       "amount": 75.0,
+      "note": "电费均摊",
       "consumers": [
         {"name": "Bob"},
         {"name": "David"},
@@ -51,6 +53,7 @@ class BillEntryPage {
     {
       "payer": {"name": "Charlie"},
       "amount": 60.0,
+      "note": "资料打印",
       "consumers": [
         {"name": "Alice"},
         {"name": "Charlie"},

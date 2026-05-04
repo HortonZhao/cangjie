@@ -29,9 +29,12 @@ public class Person {
 ```cangjie
 public class Bill {
   public init(payer: Person, amount: Float64, consumers: ArrayList<Person>)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, note: String)
   public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>, note: String)
     public mut prop payer: Person
     public mut prop amount: Float64
+    public mut prop note: String  // 备注
     public mut prop consumers: ArrayList<Person>
   public mut prop weights: ArrayList<Float64>  // 可选，和 consumers 对齐
 }
@@ -73,6 +76,7 @@ public class SettlementResult {
 - **按权重分摊**：`Bill.weights` 可选，长度需与 `consumers` 一致；权重和 $> 0$ 时按比例分摊，否则退回均摊。
 - **自动补全参与者**：即使 `participants` 未完整列出付款人/消费人，也能正常结算。
 - **支付/消费统计**：`SettlementResult` 新增 `paidTotals` 与 `consumedTotals`。
+- **账单备注**：`Bill.note` 可选，用于记录用途说明，不参与结算计算。
 
 ## 🔧 核心算法 API
 
@@ -124,6 +128,7 @@ public class JsonParser {
     {
       "payer": {"name": "Alice"},
       "amount": 120.5,
+      "note": "晚餐聚餐",
       "consumers": [
         {"name": "Alice"},
         {"name": "Bob"},
@@ -134,6 +139,7 @@ public class JsonParser {
     {
       "payer": {"name": "Bob"},
       "amount": 75.0,
+      "note": "电费均摊",
       "consumers": [
         {"name": "Bob"},
         {"name": "David"},
@@ -144,6 +150,7 @@ public class JsonParser {
     {
       "payer": {"name": "Charlie"},
       "amount": 60.0,
+      "note": "资料打印",
       "consumers": [
         {"name": "Alice"},
         {"name": "Charlie"},

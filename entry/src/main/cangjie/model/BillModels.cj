@@ -53,6 +53,7 @@ public class Person <: Hashable & Equatable<Person> & Serializable<Person> {
 public class Bill <: Serializable<Bill> {
     var _payer: Person = Person()      // 付款人
     var _amount: Float64 = 0.0    // 金额
+    var _note: String = ""    // 备注
     var _consumers: ArrayList<Person> = ArrayList<Person>()  // 消费参与人
     var _weights: ArrayList<Float64> = ArrayList<Float64>()  // 消费权重（可选，和 consumers 对齐）
 
@@ -62,11 +63,26 @@ public class Bill <: Serializable<Bill> {
         this._consumers = consumers
     }
 
+    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, note: String) {
+        this._payer = payer
+        this._amount = amount
+        this._consumers = consumers
+        this._note = note
+    }
+
     public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>) {
         this._payer = payer
         this._amount = amount
         this._consumers = consumers
         this._weights = weights
+    }
+
+    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>, note: String) {
+        this._payer = payer
+        this._amount = amount
+        this._consumers = consumers
+        this._weights = weights
+        this._note = note
     }
 
     public init() {}
@@ -75,6 +91,7 @@ public class Bill <: Serializable<Bill> {
         return DataModelStruct()
             .add(field<Person>("payer", this._payer))
             .add(field<Float64>("amount", this._amount))
+            .add(field<String>("note", this._note))
             .add(field<ArrayList<Person>>("consumers", this._consumers))
             .add(field<ArrayList<Float64>>("weights", this._weights))
     }
@@ -87,6 +104,13 @@ public class Bill <: Serializable<Bill> {
         let result = Bill()
         result.payer = Person.deserialize(dms.get("payer"))
         result.amount = Float64.deserialize(dms.get("amount"))
+        var note = ""
+        try {
+            note = String.deserialize(dms.get("note"))
+        } catch (e: Exception) {
+            note = ""
+        }
+        result.note = note
         result.consumers = ArrayList<Person>.deserialize(dms.get("consumers"))
         var weights = ArrayList<Float64>()
         try {
@@ -100,6 +124,7 @@ public class Bill <: Serializable<Bill> {
 
     @property[Person](payer)
     @property[Float64](amount)
+    @property[String](note)
     @property[ArrayList<Person>](consumers)
     @property[ArrayList<Float64>](weights)
 }
