@@ -12,6 +12,7 @@ import ohos.router.Router
 import ohos_app_cangjie_entry.logic.*
 import ohos_app_cangjie_entry.model.*
 import ohos_app_cangjie_entry.parser.*
+import ohos_app_cangjie_entry.state.AppSession
 
 import std.collection.*
 import std.math.round
@@ -221,6 +222,21 @@ class SettlementPage {
                         .width(75.percent)
                         .borderRadius(4)
                         .backgroundColor(Color(0xFF533AFD))
+                        .margin(bottom: 12)
+
+                    Button("重新开始")
+                        .onClick { _ =>
+                            this.restartSettlement()
+                        }
+                        .fontSize(16)
+                        .fontWeight(FontWeight.Medium)
+                        .fontColor(Color(0xFF533AFD))
+                        .height(44)
+                        .width(75.percent)
+                        .borderRadius(4)
+                        .borderWidth(1)
+                        .borderColor(Color(0xFF533AFD))
+                        .backgroundColor(Color.WHITE)
                         .margin(bottom: 30)
                 }
                 .width(100.percent)
@@ -309,5 +325,14 @@ class SettlementPage {
     func formatAmount(amount: Float64): String {
         let rounded = round(amount * 100.0) / 100.0
         return "${rounded}"
+    }
+
+    func restartSettlement() {
+        let resetToken =
+            AppSession.restartBillEntry()
+        Router.back(
+            url: "StartPage",
+            params: resetToken
+        )
     }
 }

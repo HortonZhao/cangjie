@@ -1,0 +1,62 @@
+{
+  "packageInformation": {
+    "ohos_app_cangjie_entry.logic": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "165545603598016689",
+      "timeStamp": 1778311382,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry.model": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "7229909796603251668",
+      "timeStamp": 1778311382,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry.parser": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "-2465438469466583174",
+      "timeStamp": 1778311382,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry.utils": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "-8484584913529590034",
+      "timeStamp": 1778311382,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry.pages": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "3518905293084062649",
+      "timeStamp": 1778317620,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry.state": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "-722928501336833352",
+      "timeStamp": 1778317620,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "ohos_app_cangjie_entry": {
+      "rootPackageName": "ohos_app_cangjie_entry",
+      "fileNameHash": "-4460500013724816175",
+      "timeStamp": 1778317346,
+      "buildFlag": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    }
+  },
+  "jsonHash": "6873789521161876148",
+  "rootPackageName": "ohos_app_cangjie_entry"
+}

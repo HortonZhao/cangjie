@@ -12,27 +12,22 @@ import encoding.json.*
 
 import ohos_app_cangjie_entry.logic.*
 import ohos_app_cangjie_entry.model.*
+import ohos_app_cangjie_entry.state.AppSession
 
 @Entry
 @Component
 class BillEntryPage {
     @State
     var participants: ArrayList<Person> =
-        ArrayList<Person>([Person("")])
+        ArrayList<Person>()
 
     @State
     var bills: ArrayList<Bill> =
-        ArrayList<Bill>([
-            Bill(
-                Person(""),
-                0.0,
-                ArrayList<Person>()
-            )
-        ])
+        ArrayList<Bill>()
 
     @State
     var amountTexts: ArrayList<String> =
-        ArrayList<String>([""])
+        ArrayList<String>()
 
     @State
     var showError: Bool = false
@@ -41,9 +36,16 @@ class BillEntryPage {
     var errorMsg: String = ""
 
     public func aboutToAppear() {
+        let draft = AppSession.loadBillEntryDraft()
+        this.participants = draft.participants
+        this.bills = draft.bills
+        this.amountTexts = draft.amountTexts
+        this.showError = false
+        this.errorMsg = ""
         this.syncBillsWithParticipants()
         this.refreshParticipants()
         this.refreshBills()
+        this.persistDraft()
     }
 
     func build() {
@@ -490,6 +492,7 @@ class BillEntryPage {
         this.participants = next
         this.syncBillsWithParticipants()
         this.refreshBills()
+        this.persistDraft()
     }
 
     func removeParticipant(index: Int64) {
@@ -528,6 +531,7 @@ class BillEntryPage {
 
         this.syncBillsWithParticipants()
         this.refreshBills()
+        this.persistDraft()
     }
 
     func updateParticipantName(
@@ -575,6 +579,7 @@ class BillEntryPage {
         this.bills = nextBills
         this.syncBillsWithParticipants()
         this.refreshBills()
+        this.persistDraft()
     }
 
     func addBill() {
@@ -592,6 +597,7 @@ class BillEntryPage {
         nextAmounts.append("")
         this.bills = nextBills
         this.amountTexts = nextAmounts
+        this.persistDraft()
     }
 
     func removeBill(index: Int64) {
@@ -611,6 +617,7 @@ class BillEntryPage {
 
         this.bills = nextBills
         this.amountTexts = nextAmounts
+        this.persistDraft()
     }
 
     func selectPayer(billIndex: Int64, payerIndex: Int64) {
@@ -627,6 +634,7 @@ class BillEntryPage {
         this.bills[billIndex].payer =
             this.participants[payerIndex]
         this.refreshBills()
+        this.persistDraft()
     }
 
     func toggleConsumer(
@@ -661,6 +669,7 @@ class BillEntryPage {
         }
 
         this.refreshBills()
+        this.persistDraft()
     }
 
     func updateAmountText(index: Int64, value: String) {
@@ -676,6 +685,7 @@ class BillEntryPage {
         }
 
         this.refreshBills()
+        this.persistDraft()
     }
 
     func isPayerSelected(
@@ -974,10 +984,19 @@ class BillEntryPage {
         let result = solver.settle(input)
         let dm = result.serialize()
         let jsonStr = dm.toJson().toJsonString()
+        this.persistDraft()
 
         Router.push(
             url: "SettlementPage",
             params: jsonStr
+        )
+    }
+
+    func persistDraft() {
+        AppSession.saveBillEntryDraft(
+            this.participants,
+            this.bills,
+            this.amountTexts
         )
     }
 
