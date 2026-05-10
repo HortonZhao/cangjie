@@ -17,36 +17,56 @@ import ohos_app_cangjie_entry.state.AppSession
 @Entry
 @Component
 class BillEntryPage {
-    @State
-    var participants: ArrayList<Person> =
-        ArrayList<Person>()
 
-    @State
-    var bills: ArrayList<Bill> =
-        ArrayList<Bill>()
-
-    @State
-    var amountTexts: ArrayList<String> =
-        ArrayList<String>()
-
-    @State
-    var showError: Bool = false
-
-    @State
-    var errorMsg: String = ""
-
-    public func aboutToAppear() {
-        let draft = AppSession.loadBillEntryDraft()
-        this.participants = draft.participants
-        this.bills = draft.bills
-        this.amountTexts = draft.amountTexts
-        this.showError = false
-        this.errorMsg = ""
-        this.syncBillsWithParticipants()
-        this.refreshParticipants()
-        this.refreshBills()
-        this.persistDraft()
+    @State var inputJson: String = """
+{
+  "participants": [
+    {"name": "Alice"},
+    {"name": "Bob"},
+    {"name": "Charlie"},
+    {"name": "David"},
+    {"name": "Eve"}
+  ],
+  "bills": [
+    {
+      "payer": {"name": "Alice"},
+      "amount": 120.5,
+      "note": "晚餐聚餐",
+      "consumers": [
+        {"name": "Alice"},
+        {"name": "Bob"},
+        {"name": "Charlie"}
+      ],
+      "weights": [1, 1, 2]
+    },
+    {
+      "payer": {"name": "Bob"},
+      "amount": 75.0,
+      "note": "电费均摊",
+      "consumers": [
+        {"name": "Bob"},
+        {"name": "David"},
+        {"name": "Eve"}
+      ],
+      "weights": [1, 1, 1]
+    },
+    {
+      "payer": {"name": "Charlie"},
+      "amount": 60.0,
+      "note": "资料打印",
+      "consumers": [
+        {"name": "Alice"},
+        {"name": "Charlie"},
+        {"name": "Eve"}
+      ],
+      "weights": [2, 1, 1]
     }
+  ]
+}
+"""
+    @State var showError: Bool = false
+    @State var errorMsg: String = ""
+
 
     func build() {
         Column {

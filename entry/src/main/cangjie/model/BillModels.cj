@@ -53,12 +53,36 @@ public class Person <: Hashable & Equatable<Person> & Serializable<Person> {
 public class Bill <: Serializable<Bill> {
     var _payer: Person = Person()      // 付款人
     var _amount: Float64 = 0.0    // 金额
+    var _note: String = ""    // 备注
     var _consumers: ArrayList<Person> = ArrayList<Person>()  // 消费参与人
+    var _weights: ArrayList<Float64> = ArrayList<Float64>()  // 消费权重（可选，和 consumers 对齐）
 
     public init(payer: Person, amount: Float64, consumers: ArrayList<Person>) {
         this._payer = payer
         this._amount = amount
         this._consumers = consumers
+    }
+
+    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, note: String) {
+        this._payer = payer
+        this._amount = amount
+        this._consumers = consumers
+        this._note = note
+    }
+
+    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>) {
+        this._payer = payer
+        this._amount = amount
+        this._consumers = consumers
+        this._weights = weights
+    }
+
+    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>, note: String) {
+        this._payer = payer
+        this._amount = amount
+        this._consumers = consumers
+        this._weights = weights
+        this._note = note
     }
 
     public init() {}
@@ -67,7 +91,9 @@ public class Bill <: Serializable<Bill> {
         return DataModelStruct()
             .add(field<Person>("payer", this._payer))
             .add(field<Float64>("amount", this._amount))
+            .add(field<String>("note", this._note))
             .add(field<ArrayList<Person>>("consumers", this._consumers))
+            .add(field<ArrayList<Float64>>("weights", this._weights))
     }
 
     public static func deserialize(dm: DataModel): Bill {
@@ -78,13 +104,29 @@ public class Bill <: Serializable<Bill> {
         let result = Bill()
         result.payer = Person.deserialize(dms.get("payer"))
         result.amount = Float64.deserialize(dms.get("amount"))
+        var note = ""
+        try {
+            note = String.deserialize(dms.get("note"))
+        } catch (e: Exception) {
+            note = ""
+        }
+        result.note = note
         result.consumers = ArrayList<Person>.deserialize(dms.get("consumers"))
+        var weights = ArrayList<Float64>()
+        try {
+            weights = ArrayList<Float64>.deserialize(dms.get("weights"))
+        } catch (e: Exception) {
+            weights = ArrayList<Float64>()
+        }
+        result.weights = weights
         return result
     }
 
     @property[Person](payer)
     @property[Float64](amount)
+    @property[String](note)
     @property[ArrayList<Person>](consumers)
+    @property[ArrayList<Float64>](weights)
 }
 
 // 输入数据：完整账单
@@ -162,10 +204,21 @@ public class Transfer <: Serializable<Transfer> {
 public class SettlementResult <: Serializable<SettlementResult> {
     var _transfers: ArrayList<Transfer> = ArrayList<Transfer>()  // 转账列表
     var _balances: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人净余额（可选，用于调试）
+    var _paidTotals: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人支付总额
+    var _consumedTotals: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人消费总额
 
     public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>) {
         this._transfers = transfers
         this._balances = balances
+        this._paidTotals = HashMap<String, Float64>()
+        this._consumedTotals = HashMap<String, Float64>()
+    }
+
+    public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>, paidTotals: HashMap<String, Float64>, consumedTotals: HashMap<String, Float64>) {
+        this._transfers = transfers
+        this._balances = balances
+        this._paidTotals = paidTotals
+        this._consumedTotals = consumedTotals
     }
 
     public init() {}
@@ -174,6 +227,8 @@ public class SettlementResult <: Serializable<SettlementResult> {
         return DataModelStruct()
             .add(field<ArrayList<Transfer>>("transfers", this._transfers))
             .add(field<HashMap<String, Float64>>("balances", this._balances))
+            .add(field<HashMap<String, Float64>>("paidTotals", this._paidTotals))
+            .add(field<HashMap<String, Float64>>("consumedTotals", this._consumedTotals))
     }
 
     public static func deserialize(dm: DataModel): SettlementResult {
@@ -184,9 +239,25 @@ public class SettlementResult <: Serializable<SettlementResult> {
         let result = SettlementResult()
         result.transfers = ArrayList<Transfer>.deserialize(dms.get("transfers"))
         result.balances = HashMap<String, Float64>.deserialize(dms.get("balances"))
+        var paidTotals = HashMap<String, Float64>()
+        var consumedTotals = HashMap<String, Float64>()
+        try {
+            paidTotals = HashMap<String, Float64>.deserialize(dms.get("paidTotals"))
+        } catch (e: Exception) {
+            paidTotals = HashMap<String, Float64>()
+        }
+        try {
+            consumedTotals = HashMap<String, Float64>.deserialize(dms.get("consumedTotals"))
+        } catch (e: Exception) {
+            consumedTotals = HashMap<String, Float64>()
+        }
+        result.paidTotals = paidTotals
+        result.consumedTotals = consumedTotals
         return result
     }
 
     @property[ArrayList<Transfer>](transfers)
     @property[HashMap<String, Float64>](balances)
+    @property[HashMap<String, Float64>](paidTotals)
+    @property[HashMap<String, Float64>](consumedTotals)
 }

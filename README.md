@@ -28,10 +28,15 @@ public class Person {
 ### Bill
 ```cangjie
 public class Bill {
-    public init(payer: Person, amount: Float64, consumers: ArrayList<Person>)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, note: String)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>)
+  public init(payer: Person, amount: Float64, consumers: ArrayList<Person>, weights: ArrayList<Float64>, note: String)
     public mut prop payer: Person
     public mut prop amount: Float64
+    public mut prop note: String  // 备注
     public mut prop consumers: ArrayList<Person>
+  public mut prop weights: ArrayList<Float64>  // 可选，和 consumers 对齐
 }
 ```
 
@@ -57,11 +62,21 @@ public class Transfer {
 ### SettlementResult
 ```cangjie
 public class SettlementResult {
-    public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>)
+  public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>)
+  public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>, paidTotals: HashMap<String, Float64>, consumedTotals: HashMap<String, Float64>)
     public mut prop transfers: ArrayList<Transfer>
     public mut prop balances: HashMap<String, Float64>  // key: 人名, value: 净余额
+  public mut prop paidTotals: HashMap<String, Float64>  // key: 人名, value: 支付总额
+  public mut prop consumedTotals: HashMap<String, Float64>  // key: 人名, value: 消费总额
 }
 ```
+
+## ✨ 新增功能（后端）
+
+- **按权重分摊**：`Bill.weights` 可选，长度需与 `consumers` 一致；权重和 $> 0$ 时按比例分摊，否则退回均摊。
+- **自动补全参与者**：即使 `participants` 未完整列出付款人/消费人，也能正常结算。
+- **支付/消费统计**：`SettlementResult` 新增 `paidTotals` 与 `consumedTotals`。
+- **账单备注**：`Bill.note` 可选，用于记录用途说明，不参与结算计算。
 
 ## 🔧 核心算法 API
 
@@ -86,6 +101,8 @@ let solver = SettlementSolver()
 let result = solver.settle(billInput)
 // result.transfers: 转账列表
 // result.balances: 每人净余额
+// result.paidTotals: 每人支付总额
+// result.consumedTotals: 每人消费总额
 ```
 
 ### JsonParser
@@ -111,29 +128,35 @@ public class JsonParser {
     {
       "payer": {"name": "Alice"},
       "amount": 120.5,
+      "note": "晚餐聚餐",
       "consumers": [
         {"name": "Alice"},
         {"name": "Bob"},
         {"name": "Charlie"}
-      ]
+      ],
+      "weights": [1, 1, 2]
     },
     {
       "payer": {"name": "Bob"},
       "amount": 75.0,
+      "note": "电费均摊",
       "consumers": [
         {"name": "Bob"},
         {"name": "David"},
         {"name": "Eve"}
-      ]
+      ],
+      "weights": [1, 1, 1]
     },
     {
       "payer": {"name": "Charlie"},
       "amount": 60.0,
+      "note": "资料打印",
       "consumers": [
         {"name": "Alice"},
         {"name": "Charlie"},
         {"name": "Eve"}
-      ]
+      ],
+      "weights": [2, 1, 1]
     }
   ]
 }
@@ -141,9 +164,28 @@ public class JsonParser {
 
 ## 📤 输出格式
 
+```json
+{
+  "transfers": [
+    {"from": {"name": "David"}, "to": {"name": "Alice"}, "amount": 12.5}
+  ],
+  "balances": {
+    "Alice": 40.0,
+    "Bob": -10.0
+  },
+  "paidTotals": {
+    "Alice": 120.5,
+    "Bob": 75.0
+  },
+  "consumedTotals": {
+    "Alice": 60.25,
+    "Bob": 35.0
+  }
+}
+```
+
 
 # ！重要！
-## 目前前端的`SettlementPage.cj`是有问题的，我不知道为什么仓颉不支持用for循环遍历生成组件（不知道是不是我IDE的问题），于是我用硬编码的方式将遍历的组件列出来了。
-## 具体请看`SettlementPage.cj`中的`54-61`行和`85-91`行，一看就能明白问题在哪了。
-## 目前我不知道有什么好的解决方法，就留在这了
-## 另外，我给出的两个前端页面只是来展示接口的，不是真正的前端
+## 目前前端的`SettlementPage.cj`是有问题的，我不知道为什么仓颉不支持用for循环遍历生成组件（不知道是不是我IDE的问题），于是我用硬编码的方式将净余额、支付统计、消费统计和转账列表的组件列出来了。
+## 目前我不知道有什么好的解决方法，就留在这了。
+## 另外，我给出的两个前端页面只是来展示接口的，不是真正的前端。

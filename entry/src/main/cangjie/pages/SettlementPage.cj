@@ -24,7 +24,10 @@ import serialization.serialization.*
 class SettlementPage {
     @State var transfers: ArrayList<Transfer> = ArrayList()
     @State var balances: HashMap<String, Float64> = HashMap()
-    var sortedNames: Array<String> = []
+
+    @State var paidTotals: HashMap<String, Float64> = HashMap()
+    @State var consumedTotals: HashMap<String, Float64> = HashMap()
+
 
     public func aboutToAppear() {
         let paramStr = Router.getParams().getOrDefault({ => "" })
@@ -36,13 +39,9 @@ class SettlementPage {
         this.transfers = result.transfers
         this.balances = result.balances
 
-        // 提取人名排序
-        let tmp = ArrayList<String>()
-        let keys = this.balances.keys()
-        for (k in keys) {
-            tmp.append(k)
-        }
-        this.sortedNames = tmp.toArray()
+        this.paidTotals = result.paidTotals
+        this.consumedTotals = result.consumedTotals
+
     }
 
     func build() {
@@ -52,82 +51,81 @@ class SettlementPage {
 
             Scroll {
                 Column {
-                    Text("结算结果")
-                        .fontSize(34)
-                        .fontWeight(FontWeight.Medium)
-                        .fontColor(Color(0xFF061B31))
-                        .margin(top: 16, bottom: 2)
 
-                    Text("智能 AA 记账本")
-                        .fontSize(16)
-                        .fontWeight(FontWeight.W400)
-                        .fontColor(Color(0xFF64748D))
-                        .margin(bottom: 30)
+                    buildBalanceRow("Alice", balances.get("Alice").getOrThrow())
+                    buildBalanceRow("Bob", balances.get("Bob").getOrThrow())
+                    buildBalanceRow("Charlie", balances.get("Charlie").getOrThrow())
+                    buildBalanceRow("David", balances.get("David").getOrThrow())
+                    buildBalanceRow("Eve", balances.get("Eve").getOrThrow())
+//                    for ((name, balance) in this.balances) {
+//                        buildBalanceRow(name, balance)
+//                    }
+                }
+                .width(100.percent)
+            }
+            .padding(10)
+            .backgroundColor(Color.WHITE)
+            .borderRadius(8)
+            .margin(left: 15, right: 15)
 
-                    // 净余额卡片
-                    Column {
-                        Row {}.width(100.percent).height(1).backgroundColor(Color(0x1A533AFD)).margin(bottom: 8)
+            // 支付统计
+            Text("支付统计")
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .margin(left: 15, top: 20, bottom: 10)
 
-                        Text("各人净余额")
-                            .fontSize(22)
-                            .fontWeight(FontWeight.Medium)
-                            .fontColor(Color(0xFF061B31))
-                            .margin(bottom: 18)
+            Row {
+                Column {
+                    buildAmountRow("Alice", paidTotals.get("Alice").getOrThrow())
+                    buildAmountRow("Bob", paidTotals.get("Bob").getOrThrow())
+                    buildAmountRow("Charlie", paidTotals.get("Charlie").getOrThrow())
+                    buildAmountRow("David", paidTotals.get("David").getOrThrow())
+                    buildAmountRow("Eve", paidTotals.get("Eve").getOrThrow())
+                }
+                .width(100.percent)
+            }
+            .padding(10)
+            .backgroundColor(Color.WHITE)
+            .borderRadius(8)
+            .margin(left: 15, right: 15)
 
-                        Column {
-                            if (this.sortedNames.size > 0) {
-                                buildBalanceRow(this.sortedNames[0], this.balances.get(this.sortedNames[0]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 1) {
-                                buildBalanceRow(this.sortedNames[1], this.balances.get(this.sortedNames[1]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 2) {
-                                buildBalanceRow(this.sortedNames[2], this.balances.get(this.sortedNames[2]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 3) {
-                                buildBalanceRow(this.sortedNames[3], this.balances.get(this.sortedNames[3]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 4) {
-                                buildBalanceRow(this.sortedNames[4], this.balances.get(this.sortedNames[4]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 5) {
-                                buildBalanceRow(this.sortedNames[5], this.balances.get(this.sortedNames[5]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 6) {
-                                buildBalanceRow(this.sortedNames[6], this.balances.get(this.sortedNames[6]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 7) {
-                                buildBalanceRow(this.sortedNames[7], this.balances.get(this.sortedNames[7]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 8) {
-                                buildBalanceRow(this.sortedNames[8], this.balances.get(this.sortedNames[8]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 9) {
-                                buildBalanceRow(this.sortedNames[9], this.balances.get(this.sortedNames[9]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 10) {
-                                buildBalanceRow(this.sortedNames[10], this.balances.get(this.sortedNames[10]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 11) {
-                                buildBalanceRow(this.sortedNames[11], this.balances.get(this.sortedNames[11]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 12) {
-                                buildBalanceRow(this.sortedNames[12], this.balances.get(this.sortedNames[12]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 13) {
-                                buildBalanceRow(this.sortedNames[13], this.balances.get(this.sortedNames[13]).getOrThrow())
-                            }
-                            if (this.sortedNames.size > 14) {
-                                buildBalanceRow(this.sortedNames[14], this.balances.get(this.sortedNames[14]).getOrThrow())
-                            }
-                        }
-                    }
-                    .padding(20)
-                    .backgroundColor(Color.WHITE)
-                    .borderRadius(8)
-                    .margin(left: 16, right: 16, bottom: 28)
+            // 消费统计
+            Text("消费统计")
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .margin(left: 15, top: 20, bottom: 10)
 
-                    // 转账方案卡片
+            Row {
+                Column {
+                    buildAmountRow("Alice", consumedTotals.get("Alice").getOrThrow())
+                    buildAmountRow("Bob", consumedTotals.get("Bob").getOrThrow())
+                    buildAmountRow("Charlie", consumedTotals.get("Charlie").getOrThrow())
+                    buildAmountRow("David", consumedTotals.get("David").getOrThrow())
+                    buildAmountRow("Eve", consumedTotals.get("Eve").getOrThrow())
+                }
+                .width(100.percent)
+            }
+            .padding(10)
+            .backgroundColor(Color.WHITE)
+            .borderRadius(8)
+            .margin(left: 15, right: 15)
+
+            // 转账列表
+            Text("转账方案（共${this.transfers.size}笔）")
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+                .margin(left: 15, top: 20, bottom: 10)
+
+            // 转账列表
+            if (this.transfers.size == 0) {
+                Text("无需转账，已结清！")
+                    .fontSize(16)
+                    .fontColor(Color.GREEN)
+                    .margin(top: 20)
+            } else {
+                Scroll {
+
+                        
                     Column {
                         Row {}.width(100.percent).height(1).backgroundColor(Color(0x1A533AFD)).margin(bottom: 8)
 
@@ -248,6 +246,21 @@ class SettlementPage {
         .width(100.percent)
         .height(100.percent)
         .backgroundColor(Color(0xFFF4F6FC))
+    }
+
+    @Builder
+    func buildAmountRow(name: String, amount: Float64) {
+        Row {
+            Text(name)
+                .fontSize(16)
+                .width(100)
+            Text("¥${this.formatAmount(amount)}")
+                .fontSize(16)
+                .fontColor(Color(0xFF333333))
+        }
+        .width(100.percent)
+        .height(40)
+        .padding(left: 20)
     }
 
     @Builder
