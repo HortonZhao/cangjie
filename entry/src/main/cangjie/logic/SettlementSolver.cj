@@ -10,23 +10,48 @@ import std.sort.*
 import std.math.min
 
 public class SettlementSolver {
-
-    func ensureParticipant(balances: HashMap<Person, Float64>, person: Person) {
+    func ensureParticipant(balances: HashMap<Person, Float64>, person: Person): Unit {
         match (balances.get(person)) {
-            case Some(_) => {}
-            case None => balances.put(person, 0.0)
+            case Some(_) => ()
+            case None => balances[person] = 0.0
         }
     }
 
-    func ensureName(totals: HashMap<String, Float64>, name: String) {
+    func ensureName(totals: HashMap<String, Float64>, name: String): Unit {
         match (totals.get(name)) {
-            case Some(_) => {}
-            case None => totals.put(name, 0.0)
+            case Some(_) => ()
+            case None => totals[name] = 0.0
         }
+    }
+
+    func appendNameIfMissing(names: ArrayList<String>, name: String) {
+        if (name.isEmpty() || name.isAsciiBlank()) {
+            return
+        }
+        for (existing in names) {
+            if (existing == name) {
+                return
+            }
+        }
+        names.append(name)
+    }
+
+    func collectParticipantNames(input: BillInput): ArrayList<String> {
+        let names = ArrayList<String>()
+        for (person in input.participants) {
+            this.appendNameIfMissing(names, person.name)
+        }
+        for (bill in input.bills) {
+            this.appendNameIfMissing(names, bill.payer.name)
+            for (consumer in bill.consumers) {
+                this.appendNameIfMissing(names, consumer.name)
+            }
+        }
+        return names
     }
 
     func computeBillShares(bill: Bill): ArrayList<(Person, Float64)> {
-        var shares = ArrayList<(Person, Float64)>()
+        let shares = ArrayList<(Person, Float64)>()
         let consumers = bill.consumers
         if (consumers.size == 0) {
             return shares
@@ -72,18 +97,13 @@ public class SettlementSolver {
         return shares
     }
 
-    // ==================== 第一步：计算净余额 ====================
-    // 输入：完整的账单输入
-    // 输出：每个人的净余额（正数表示应收，负数表示应付）
     public func computeNetBalances(input: BillInput): HashMap<Person, Float64> {
-        var balances = HashMap<Person, Float64>()
+        let balances = HashMap<Person, Float64>()
 
-        // 初始化所有参与者余额为0
         for (person in input.participants) {
             balances.put(person, 0.0)
         }
 
-        // 逐笔账单处理
         for (bill in input.bills) {
             let payer = bill.payer
             let amount = bill.amount
@@ -94,14 +114,11 @@ public class SettlementSolver {
                 this.ensureParticipant(balances, consumer)
             }
 
-            // 付款人先支出全部金额（减少余额）
-            // 注意：付款人也是消费者之一，会通过平摊加回来
             balances[payer] = balances[payer] + amount
 
-            // 计算每人应付金额（支持按权重分摊）
             let shares = this.computeBillShares(bill)
             if (shares.size == 0) {
-                continue  // 没有消费者，跳过
+                continue
             }
             for (share in shares) {
                 let consumer = share[0]
@@ -113,24 +130,18 @@ public class SettlementSolver {
         return balances
     }
 
-    // ==================== 第二步：最小化转账次数 ====================
-    // 输入：净余额映射
-    // 输出：最少次数的转账列表
     public func minimizeTransfers(balances: HashMap<Person, Float64>): ArrayList<Transfer> {
-        // 分离债务人和债权人
-        var debtors = ArrayList<(Person, Float64)>()   // 应付（负余额，存正数）
-        var creditors = ArrayList<(Person, Float64)>() // 应收（正余额）
+        let debtors = ArrayList<(Person, Float64)>()
+        let creditors = ArrayList<(Person, Float64)>()
 
         for ((person, balance) in balances) {
-            // 忽略余额为0的人
             if (balance < -0.01) {
-                debtors.append((person, -balance))  // 存正数，表示欠款金额
+                debtors.append((person, -balance))
             } else if (balance > 0.01) {
                 creditors.append((person, balance))
             }
         }
 
-        // 按金额降序排序（大额优先，减少转账次数）
         debtors.sortBy(stable: false, comparator: {a: (Person, Float64), b: (Person, Float64) =>
             if (a[1] > b[1]) {
                 return Ordering.LT
@@ -150,26 +161,22 @@ public class SettlementSolver {
             }
         })
 
-        var transfers = ArrayList<Transfer>()
-        var i = 0  // debtors 索引
-        var j = 0  // creditors 索引
+        let transfers = ArrayList<Transfer>()
+        var i = 0
+        var j = 0
 
         while (i < debtors.size && j < creditors.size) {
-            let debtor = debtors[i]   // 欠钱的人
-            let creditor = creditors[j]  // 被欠钱的人
-
-            // 本次转账金额（取较小的那个）
+            let debtor = debtors[i]
+            let creditor = creditors[j]
             let amount = min(debtor[1], creditor[1])
 
             if (amount > 0.01) {
                 transfers.append(Transfer(debtor[0], creditor[0], amount))
             }
 
-            // 更新剩余金额
             debtors[i] = (debtor[0], debtor[1] - amount)
             creditors[j] = (creditor[0], creditor[1] - amount)
 
-            // 移动指针（如果剩余金额为0）
             if (debtors[i][1] < 0.01) {
                 i++
             }
@@ -182,25 +189,21 @@ public class SettlementSolver {
     }
 
     public func settle(input: BillInput): SettlementResult {
-        // 计算净余额
         let balances = this.computeNetBalances(input)
 
-        // 将 Person 转 String 用于调试显示
         let balanceDisplay = HashMap<String, Float64>()
         for ((person, balance) in balances) {
             balanceDisplay.put(person.name, balance)
         }
 
-        // 计算最小转账
         let transfers = this.minimizeTransfers(balances)
-
-        // 计算支付/消费统计
         let paidTotals = HashMap<String, Float64>()
         let consumedTotals = HashMap<String, Float64>()
+        let participantNames = this.collectParticipantNames(input)
 
-        for (person in input.participants) {
-            this.ensureName(paidTotals, person.name)
-            this.ensureName(consumedTotals, person.name)
+        for (name in participantNames) {
+            this.ensureName(paidTotals, name)
+            this.ensureName(consumedTotals, name)
         }
 
         for (bill in input.bills) {
@@ -218,6 +221,12 @@ public class SettlementSolver {
             }
         }
 
-        return SettlementResult(transfers, balanceDisplay, paidTotals, consumedTotals)
+        return SettlementResult(
+            transfers,
+            balanceDisplay,
+            paidTotals,
+            consumedTotals,
+            participantNames
+        )
     }
 }

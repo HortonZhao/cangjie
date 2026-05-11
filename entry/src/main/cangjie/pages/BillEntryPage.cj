@@ -17,56 +17,36 @@ import ohos_app_cangjie_entry.state.AppSession
 @Entry
 @Component
 class BillEntryPage {
+    @State
+    var participants: ArrayList<Person> =
+        ArrayList<Person>()
 
-    @State var inputJson: String = """
-{
-  "participants": [
-    {"name": "Alice"},
-    {"name": "Bob"},
-    {"name": "Charlie"},
-    {"name": "David"},
-    {"name": "Eve"}
-  ],
-  "bills": [
-    {
-      "payer": {"name": "Alice"},
-      "amount": 120.5,
-      "note": "晚餐聚餐",
-      "consumers": [
-        {"name": "Alice"},
-        {"name": "Bob"},
-        {"name": "Charlie"}
-      ],
-      "weights": [1, 1, 2]
-    },
-    {
-      "payer": {"name": "Bob"},
-      "amount": 75.0,
-      "note": "电费均摊",
-      "consumers": [
-        {"name": "Bob"},
-        {"name": "David"},
-        {"name": "Eve"}
-      ],
-      "weights": [1, 1, 1]
-    },
-    {
-      "payer": {"name": "Charlie"},
-      "amount": 60.0,
-      "note": "资料打印",
-      "consumers": [
-        {"name": "Alice"},
-        {"name": "Charlie"},
-        {"name": "Eve"}
-      ],
-      "weights": [2, 1, 1]
+    @State
+    var bills: ArrayList<Bill> =
+        ArrayList<Bill>()
+
+    @State
+    var amountTexts: ArrayList<String> =
+        ArrayList<String>()
+
+    @State
+    var showError: Bool = false
+
+    @State
+    var errorMsg: String = ""
+
+    public func aboutToAppear() {
+        let draft = AppSession.loadBillEntryDraft()
+        this.participants = draft.participants
+        this.bills = draft.bills
+        this.amountTexts = draft.amountTexts
+        this.showError = false
+        this.errorMsg = ""
+        this.syncBillsWithParticipants()
+        this.refreshParticipants()
+        this.refreshBills()
+        this.persistDraft()
     }
-  ]
-}
-"""
-    @State var showError: Bool = false
-    @State var errorMsg: String = ""
-
 
     func build() {
         Column {
@@ -322,6 +302,10 @@ class BillEntryPage {
                     .margin(top: 10)
 
                 buildConsumerSelector(index)
+
+                if (this.bills[index].consumers.size > 0) {
+                    buildWeightEditorList(index)
+                }
             }
             .width(100.percent)
             .alignItems(HorizontalAlign.Start)
@@ -393,6 +377,97 @@ class BillEntryPage {
             .width(100.percent)
             .height(40)
             .margin(top: 6)
+        }
+    }
+
+    @Builder
+    func buildWeightEditorList(billIndex: Int64) {
+        Column {
+            Text("权重分摊")
+                .fontSize(13)
+                .fontColor(Color(0xFF273951))
+                .margin(top: 10, bottom: 8)
+
+            ForEach(
+                this.consumerIndexesOfBill(billIndex),
+                itemGeneratorFunc: {
+                    item: Int64,
+                    tag: Int64 =>
+                        this.buildWeightEditorRow(
+                            billIndex,
+                            item
+                        )
+                }
+            )
+        }
+        .width(100.percent)
+    }
+
+    @Builder
+    func buildWeightEditorRow(
+        billIndex: Int64,
+        consumerIndex: Int64
+    ) {
+        if (
+            billIndex >= 0 &&
+            billIndex < this.bills.size &&
+            consumerIndex >= 0 &&
+            consumerIndex < this.bills[billIndex].consumers.size
+        ) {
+            Row {
+                Text(
+                    this.bills[billIndex].consumers[consumerIndex].name
+                )
+                    .fontSize(13)
+                    .fontColor(Color(0xFF273951))
+                    .layoutWeight(1)
+
+                Button("-")
+                    .onClick { _ =>
+                        this.decreaseConsumerWeight(
+                            billIndex,
+                            consumerIndex
+                        )
+                    }
+                    .height(32)
+                    .width(48)
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(Color(0xFF2767F7))
+                    .backgroundColor(Color(0xFFEFF4FF))
+                    .borderWidth(1)
+                    .borderColor(Color(0xFFBFD3FF))
+                    .borderRadius(6)
+
+                Text(
+                    "权重 ${this.weightIntAt(billIndex, consumerIndex)}"
+                )
+                    .fontSize(13)
+                    .fontColor(Color(0xFF061B31))
+                    .margin(left: 10, right: 10)
+
+                Button("+")
+                    .onClick { _ =>
+                        this.increaseConsumerWeight(
+                            billIndex,
+                            consumerIndex
+                        )
+                    }
+                    .height(32)
+                    .width(48)
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor(Color.WHITE)
+                    .backgroundColor(Color(0xFF2767F7))
+                    .borderWidth(1)
+                    .borderColor(Color(0xFF2767F7))
+                    .borderRadius(6)
+            }
+            .width(100.percent)
+            .justifyContent(FlexAlign.End)
+            .margin(bottom: 8)
+        } else {
+            Row {}
         }
     }
 
@@ -543,6 +618,9 @@ class BillEntryPage {
                     bill.consumers[i].name == removed.name
                 ) {
                     bill.consumers.remove(i)
+                    if (i < bill.weights.size) {
+                        bill.weights.remove(i)
+                    }
                 } else {
                     i = i + 1
                 }
@@ -579,19 +657,30 @@ class BillEntryPage {
             }
 
             let nextConsumers = ArrayList<Person>()
+            let nextWeights = ArrayList<Float64>()
+            var consumerIndex = 0
             for (consumer in bill.consumers) {
                 if (consumer.name == oldName) {
                     nextConsumers.append(newPerson)
                 } else {
                     nextConsumers.append(consumer)
                 }
+                nextWeights.append(
+                    this.weightValueOrDefault(
+                        bill.weights,
+                        consumerIndex
+                    )
+                )
+                consumerIndex = consumerIndex + 1
             }
 
             nextBills.append(
                 Bill(
                     nextPayer,
                     bill.amount,
-                    nextConsumers
+                    nextConsumers,
+                    nextWeights,
+                    bill.note
                 )
             )
         }
@@ -608,7 +697,8 @@ class BillEntryPage {
             Bill(
                 Person(""),
                 0.0,
-                ArrayList<Person>()
+                ArrayList<Person>(),
+                ArrayList<Float64>()
             )
         )
         let nextAmounts = ArrayList<String>(
@@ -684,10 +774,62 @@ class BillEntryPage {
 
         if (target >= 0) {
             bill.consumers.remove(target)
+            if (target < bill.weights.size) {
+                bill.weights.remove(target)
+            }
         } else {
             bill.consumers.append(person)
+            bill.weights.append(1.0)
         }
 
+        this.refreshBills()
+        this.persistDraft()
+    }
+
+    func decreaseConsumerWeight(
+        billIndex: Int64,
+        consumerIndex: Int64
+    ) {
+        if (billIndex < 0 || billIndex >= this.bills.size) {
+            return
+        }
+
+        let bill = this.bills[billIndex]
+        this.ensureBillWeightSize(bill)
+        if (
+            consumerIndex < 0 ||
+            consumerIndex >= bill.weights.size
+        ) {
+            return
+        }
+
+        let currentWeight = bill.weights[consumerIndex]
+        if (currentWeight > 1.0) {
+            bill.weights[consumerIndex] = currentWeight - 1.0
+            this.refreshBills()
+            this.persistDraft()
+        }
+    }
+
+    func increaseConsumerWeight(
+        billIndex: Int64,
+        consumerIndex: Int64
+    ) {
+        if (billIndex < 0 || billIndex >= this.bills.size) {
+            return
+        }
+
+        let bill = this.bills[billIndex]
+        this.ensureBillWeightSize(bill)
+        if (
+            consumerIndex < 0 ||
+            consumerIndex >= bill.weights.size
+        ) {
+            return
+        }
+
+        bill.weights[consumerIndex] =
+            bill.weights[consumerIndex] + 1.0
         this.refreshBills()
         this.persistDraft()
     }
@@ -756,11 +898,43 @@ class BillEntryPage {
         return this.amountTexts[index]
     }
 
+    func weightValueAt(
+        billIndex: Int64,
+        consumerIndex: Int64
+    ): Float64 {
+        if (billIndex < 0 || billIndex >= this.bills.size) {
+            return 1.0
+        }
+
+        let bill = this.bills[billIndex]
+        this.ensureBillWeightSize(bill)
+        if (
+            consumerIndex < 0 ||
+            consumerIndex >= bill.weights.size
+        ) {
+            return 1.0
+        }
+        return bill.weights[consumerIndex]
+    }
+
+    func weightIntAt(
+        billIndex: Int64,
+        consumerIndex: Int64
+    ): Int64 {
+        return Int64(
+            this.weightValueAt(
+                billIndex,
+                consumerIndex
+            )
+        )
+    }
+
     func syncBillsWithParticipants() {
         for (bill in this.bills) {
             if (this.participants.size == 0) {
                 bill.payer = Person("")
                 bill.consumers = ArrayList<Person>()
+                bill.weights = ArrayList<Float64>()
                 continue
             }
 
@@ -773,6 +947,8 @@ class BillEntryPage {
             }
 
             var cleaned = ArrayList<Person>()
+            var cleanedWeights = ArrayList<Float64>()
+            var consumerIndex = 0
             for (consumer in bill.consumers) {
                 let idx = this.findParticipantIndex(
                     consumer.name
@@ -786,10 +962,18 @@ class BillEntryPage {
                         )
                     ) {
                         cleaned.append(candidate)
+                        cleanedWeights.append(
+                            this.weightValueOrDefault(
+                                bill.weights,
+                                consumerIndex
+                            )
+                        )
                     }
                 }
+                consumerIndex = consumerIndex + 1
             }
             bill.consumers = cleaned
+            bill.weights = cleanedWeights
         }
     }
 
@@ -828,6 +1012,19 @@ class BillEntryPage {
         return indexes
     }
 
+    func consumerIndexesOfBill(
+        billIndex: Int64
+    ): ArrayList<Int64> {
+        let indexes = ArrayList<Int64>()
+        if (billIndex < 0 || billIndex >= this.bills.size) {
+            return indexes
+        }
+        for (i in 0..this.bills[billIndex].consumers.size) {
+            indexes.append(i)
+        }
+        return indexes
+    }
+
     func containsName(
         list: ArrayList<Person>,
         name: String
@@ -838,6 +1035,34 @@ class BillEntryPage {
             }
         }
         return false
+    }
+
+    func ensureBillWeightSize(bill: Bill) {
+        while (bill.weights.size < bill.consumers.size) {
+            bill.weights.append(1.0)
+        }
+
+        while (bill.weights.size > bill.consumers.size) {
+            bill.weights.remove(bill.weights.size - 1)
+        }
+    }
+
+    func weightValueOrDefault(
+        weights: ArrayList<Float64>,
+        index: Int64
+    ): Float64 {
+        if (index < 0 || index >= weights.size) {
+            return 1.0
+        }
+        let weight = weights[index]
+        if (weight <= 0.0) {
+            return 1.0
+        }
+        let normalized = Int64(weight)
+        if (normalized <= 0) {
+            return 1.0
+        }
+        return Float64(normalized)
     }
 
     func parseAmount(text: String): Option<Float64> {
@@ -948,6 +1173,20 @@ class BillEntryPage {
                 }
             }
 
+            if (bill.weights.size != bill.consumers.size) {
+                return Some(
+                    "消费权重数量必须与消费者数量一致"
+                )
+            }
+
+            for (weight in bill.weights) {
+                if (weight <= 0.0) {
+                    return Some(
+                        "消费权重必须大于 0"
+                    )
+                }
+            }
+
             i = i + 1
         }
 
@@ -978,10 +1217,14 @@ class BillEntryPage {
         for (bill in this.bills) {
             let payer = Person(bill.payer.name)
             let cs = ArrayList<Person>()
+            let ws = ArrayList<Float64>()
             for (consumer in bill.consumers) {
                 cs.append(Person(consumer.name))
             }
-            bs.append(Bill(payer, bill.amount, cs))
+            for (weight in bill.weights) {
+                ws.append(weight)
+            }
+            bs.append(Bill(payer, bill.amount, cs, ws, bill.note))
         }
 
         return BillInput(ps, bs)

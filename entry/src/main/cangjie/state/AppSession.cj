@@ -84,14 +84,20 @@ public class AppSession {
         let copies = ArrayList<Bill>()
         for (bill in bills) {
             let consumers = ArrayList<Person>()
+            let weights = ArrayList<Float64>()
             for (consumer in bill.consumers) {
                 consumers.append(Person(consumer.name))
+            }
+            for (weight in bill.weights) {
+                weights.append(weight)
             }
             copies.append(
                 Bill(
                     Person(bill.payer.name),
                     bill.amount,
-                    consumers
+                    consumers,
+                    weights,
+                    bill.note
                 )
             )
         }

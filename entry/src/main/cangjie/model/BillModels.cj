@@ -43,19 +43,16 @@ public class Person <: Hashable & Equatable<Person> & Serializable<Person> {
         result.name = String.deserialize(dms.get("name"))
         return result
     }
-    
+
     @property[String](name)
 }
 
-
-
-// 单笔账单
 public class Bill <: Serializable<Bill> {
-    var _payer: Person = Person()      // 付款人
-    var _amount: Float64 = 0.0    // 金额
-    var _note: String = ""    // 备注
-    var _consumers: ArrayList<Person> = ArrayList<Person>()  // 消费参与人
-    var _weights: ArrayList<Float64> = ArrayList<Float64>()  // 消费权重（可选，和 consumers 对齐）
+    var _payer: Person = Person()
+    var _amount: Float64 = 0.0
+    var _note: String = ""
+    var _consumers: ArrayList<Person> = ArrayList<Person>()
+    var _weights: ArrayList<Float64> = ArrayList<Float64>()
 
     public init(payer: Person, amount: Float64, consumers: ArrayList<Person>) {
         this._payer = payer
@@ -129,10 +126,9 @@ public class Bill <: Serializable<Bill> {
     @property[ArrayList<Float64>](weights)
 }
 
-// 输入数据：完整账单
 public class BillInput <: Serializable<BillInput> {
-    var _participants: ArrayList<Person> = ArrayList<Person>()  // 所有参与者
-    var _bills: ArrayList<Bill> = ArrayList<Bill>()           // 账单列表
+    var _participants: ArrayList<Person> = ArrayList<Person>()
+    var _bills: ArrayList<Bill> = ArrayList<Bill>()
 
     public init(participants: ArrayList<Person>, bills: ArrayList<Bill>) {
         this._participants = participants
@@ -162,11 +158,10 @@ public class BillInput <: Serializable<BillInput> {
     @property[ArrayList<Bill>](bills)
 }
 
-// 输出数据：转账指令
 public class Transfer <: Serializable<Transfer> {
-    var _from: Person = Person()   // 付款方
-    var _to: Person = Person()     // 收款方
-    var _amount: Float64 = 0.0 // 金额
+    var _from: Person = Person()
+    var _to: Person = Person()
+    var _amount: Float64 = 0.0
 
     public init(from: Person, to: Person, amount: Float64) {
         this._from = from
@@ -200,18 +195,19 @@ public class Transfer <: Serializable<Transfer> {
     @property[Float64](amount)
 }
 
-// 结算结果
 public class SettlementResult <: Serializable<SettlementResult> {
-    var _transfers: ArrayList<Transfer> = ArrayList<Transfer>()  // 转账列表
-    var _balances: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人净余额（可选，用于调试）
-    var _paidTotals: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人支付总额
-    var _consumedTotals: HashMap<String, Float64> = HashMap<String, Float64>()  // 各人消费总额
+    var _transfers: ArrayList<Transfer> = ArrayList<Transfer>()
+    var _balances: HashMap<String, Float64> = HashMap<String, Float64>()
+    var _paidTotals: HashMap<String, Float64> = HashMap<String, Float64>()
+    var _consumedTotals: HashMap<String, Float64> = HashMap<String, Float64>()
+    var _participantNames: ArrayList<String> = ArrayList<String>()
 
     public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>) {
         this._transfers = transfers
         this._balances = balances
         this._paidTotals = HashMap<String, Float64>()
         this._consumedTotals = HashMap<String, Float64>()
+        this._participantNames = ArrayList<String>()
     }
 
     public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>, paidTotals: HashMap<String, Float64>, consumedTotals: HashMap<String, Float64>) {
@@ -219,6 +215,15 @@ public class SettlementResult <: Serializable<SettlementResult> {
         this._balances = balances
         this._paidTotals = paidTotals
         this._consumedTotals = consumedTotals
+        this._participantNames = ArrayList<String>()
+    }
+
+    public init(transfers: ArrayList<Transfer>, balances: HashMap<String, Float64>, paidTotals: HashMap<String, Float64>, consumedTotals: HashMap<String, Float64>, participantNames: ArrayList<String>) {
+        this._transfers = transfers
+        this._balances = balances
+        this._paidTotals = paidTotals
+        this._consumedTotals = consumedTotals
+        this._participantNames = participantNames
     }
 
     public init() {}
@@ -229,6 +234,7 @@ public class SettlementResult <: Serializable<SettlementResult> {
             .add(field<HashMap<String, Float64>>("balances", this._balances))
             .add(field<HashMap<String, Float64>>("paidTotals", this._paidTotals))
             .add(field<HashMap<String, Float64>>("consumedTotals", this._consumedTotals))
+            .add(field<ArrayList<String>>("participantNames", this._participantNames))
     }
 
     public static func deserialize(dm: DataModel): SettlementResult {
@@ -239,20 +245,31 @@ public class SettlementResult <: Serializable<SettlementResult> {
         let result = SettlementResult()
         result.transfers = ArrayList<Transfer>.deserialize(dms.get("transfers"))
         result.balances = HashMap<String, Float64>.deserialize(dms.get("balances"))
+
         var paidTotals = HashMap<String, Float64>()
-        var consumedTotals = HashMap<String, Float64>()
         try {
             paidTotals = HashMap<String, Float64>.deserialize(dms.get("paidTotals"))
         } catch (e: Exception) {
             paidTotals = HashMap<String, Float64>()
         }
+
+        var consumedTotals = HashMap<String, Float64>()
         try {
             consumedTotals = HashMap<String, Float64>.deserialize(dms.get("consumedTotals"))
         } catch (e: Exception) {
             consumedTotals = HashMap<String, Float64>()
         }
+
+        var participantNames = ArrayList<String>()
+        try {
+            participantNames = ArrayList<String>.deserialize(dms.get("participantNames"))
+        } catch (e: Exception) {
+            participantNames = ArrayList<String>()
+        }
+
         result.paidTotals = paidTotals
         result.consumedTotals = consumedTotals
+        result.participantNames = participantNames
         return result
     }
 
@@ -260,4 +277,5 @@ public class SettlementResult <: Serializable<SettlementResult> {
     @property[HashMap<String, Float64>](balances)
     @property[HashMap<String, Float64>](paidTotals)
     @property[HashMap<String, Float64>](consumedTotals)
+    @property[ArrayList<String>](participantNames)
 }
